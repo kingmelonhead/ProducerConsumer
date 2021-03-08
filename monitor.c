@@ -3,16 +3,17 @@
 #include <unistd.h>
 #include <signal.h>
 #include <getopt.h>
+#include <stdlib.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
 #include <time.h>
-
+#include "lib_mon.h"
 
 //variables that need to be global
 pid_t *pid_list;
-state *state_ptr;
-int *buffer_ptr;
+int *buffer_ptr, *sem_ptr;
+int state_id, buffer_id;
 
 
 void display_help(){
@@ -33,6 +34,23 @@ void init_pid_list(){
 		pid_list[i] = 0;
 	}
 }
+
+void detach_mem(){
+	shmdt(buffer_ptr);
+	shmdt(sem_ptr);
+}
+
+void rm_mem(){
+	shmctl(buffer_id, IPC_RMID, NULL);
+	shmctl(state_id, IPC_RMID, NULL);
+}
+
+void cleanup(){
+	detach_mem();
+	rm_mem();
+}
+
+
 
 int main(int argc, char *argv[]){
 
@@ -109,13 +127,14 @@ int main(int argc, char *argv[]){
 	}
 
 	key_t state_key = ftok("./README", 'a');
-	int state_id = shmget(state_key, sizeof(state) * (producers + consumers), IPC_CREAT | 0666);
-	state_ptr = (state *)shmat(state_id, 0, 0);
+	state_id = shmget(state_key, sizeof(int) * (producers + consumers), IPC_CREAT | 0666);
+	sem_ptr = (int *)shmat(state_id, 0, 0);
 
 	key_t buffer_key = ftok(".", 'a');
-	int buffer_id = shmget(buffer_key, sizeof(int) * 4, IPC_CREAT | 0666);
+	buffer_id = shmget(buffer_key, sizeof(int) * 4, IPC_CREAT | 0666);
 	buffer_ptr = (int *)shmat(buffer_id, 0, 0);
-
+	
+	cleanup();
 
 return 0;
 }
