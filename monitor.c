@@ -11,14 +11,39 @@
 #include <time.h>
 #include "lib_mon.h"
 
+
+
 //variables that need to be global
 pid_t *pid_list;
 int *buffer_ptr;
 int sem_id, buffer_id;
 
 
+
 void detach_mem(){
 	shmdt(buffer_ptr);
+}
+
+void kill_pids(){
+	//function to kill all pids on the event of early termination
+	int i; 
+	for (i=0; i<19; i++){
+		if (pid_list[i] != 0){
+			kill(pid_list[i], SIGKILL);
+		}
+	}
+
+}
+
+void find_and_remove(pid_t pid){
+	//finds passed pid in the global pid list and sets it to zero
+	int i;
+	for (i=0; i<19; i++){
+		if (pid_list[i] == pid){
+			pid_list[i] = 0;
+			break;
+		}
+	}
 }
 
 void rm_mem(){
@@ -60,6 +85,8 @@ int main(int argc, char *argv[]){
 	//signal handlers
 	signal(SIGINT, ctrl_c_handler);
 	signal(SIGKILL, ctrl_c_handler);
+	signal(SIGALRM, ctrl_c_handler);
+
 	// variable declarations
 	int opt;
 	int producers = 2;
@@ -67,6 +94,9 @@ int main(int argc, char *argv[]){
 	int time = 100;
 	int max_proc = 19;
 	char log_name[20];
+
+	//set alarm
+	alarm(100);
 
 	//initialize the pointer to the list of pids
 	pid_list = malloc(sizeof(pid_t) * max_proc);
@@ -127,7 +157,7 @@ int main(int argc, char *argv[]){
 
 	//gets shared semaphore array
 	key_t sem_key = ftok("./README", 'a');
-	sem_id = semget(sem_key, 5, IPC_CREAT | 0666);
+	sem_id = semget(sem_key, NUM_SEMS, IPC_CREAT | 0666);
 
 	//gets shared memory for the buffer
 	key_t buffer_key = ftok(".", 'a');

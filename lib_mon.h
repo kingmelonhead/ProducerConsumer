@@ -1,3 +1,4 @@
+#define NUM_SEMS 5
 void append(int);
 void consume();
 void sem_wait();

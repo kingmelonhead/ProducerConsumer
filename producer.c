@@ -13,43 +13,44 @@
 
 /* file - producer.c */
 
-int produce(){
-    //generate random number
-    int x = 0;
-    //x = random number 
-    return x;
-}
+int sem_id;
 
 void kill_handler(){
     exit(0);
 }
 
-int get_sleep_time(){
-    int x = 0;
-    //generate random sleep time
-    return x;
-}
-
 int main(int argc, char *argv[]){
 
-    signal(SIGKILL, kill_handler)l
+    srand(time(NULL));
 
-    int num;
+    signal(SIGKILL, kill_handler);
+
+    int product;
+    int sleep_time;
 
     //gets shared semaphore array
 	key_t sem_key = ftok("./README", 'a');
-	sem_id = semget(sem_key, 5, IPC_CREAT | 0666);
+	sem_id = semget(sem_key, NUM_SEMS, 0);
 
     do {
-    //produce
-    num = produce();
-    
-    //wait for signal from monitor to append and write action to log
-    //append(num);
+    //produce a number between 0 and 512
+    product = (rand() % (513));
 
+    //get random time to sleep
+    sleep_time = (rand() % (5 - 1 + 1)) + 1;
 
     //sleep
+    sleep(sleep_time);
+
+    
+    //wait for signal from monitor to append and write action to log
+    //should be a mutex lock i think
+    //append(product);
+
+
+    
 
     //loop till parent decides to die
-    } while (1)
+    //parent will die when there are no more consumers that need to eat
+    } while (1);
 }

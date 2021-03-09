@@ -13,19 +13,34 @@
 
 /* file - consumer.c   */
 
-void kill_handler(){
+int sem_id;
 
+void kill_handler(){
     exit(0);
 }
 
 int main(int argc, char *argv[]){
 
+    //gets shared semaphore array
+	key_t sem_key = ftok("./README", 'a');
+	sem_id = semget(sem_key, NUM_SEMS, 0);
+
+    srand(time(NULL));
+
+    //set up handler for premature end 
     signal(SIGKILL, kill_handler);
 
-    //wait for signal to consume
+    //get random sleep time
+    int sleep_time = (rand() % (10 - 1 + 1)) + 1;
+
+    //sleep
+    sleep(sleep_time);
+
+    //wait for signal to consume from the monitor
+    //this will include some logging and will be done in the monitor
+    //consume();
     
-    //consume and log in monitor 
 
     //die
-
+    exit(0);
 }
