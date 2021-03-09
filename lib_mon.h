@@ -1,3 +1,4 @@
-void enter_buffer();
-void take_from_buffer();
-void test();
+void append(int);
+void consume();
+void sem_wait();
+void sem_signal();

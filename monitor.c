@@ -7,21 +7,37 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <sys/sem.h>
 #include <time.h>
 #include "lib_mon.h"
 
 //variables that need to be global
 pid_t *pid_list;
-int *buffer_ptr, *sem_ptr;
-int state_id, buffer_id;
+int *buffer_ptr;
+int sem_id, buffer_id;
 
+
+void detach_mem(){
+	shmdt(buffer_ptr);
+}
+
+void rm_mem(){
+	shmctl(buffer_id, IPC_RMID, NULL);
+	semctl(sem_id, 0, IPC_RMID, NULL);
+}
+
+void cleanup(){
+	detach_mem();
+	rm_mem();
+}
 
 void display_help(){
 
 }
 
 void ctrl_c_handler(){
-
+	cleanup();
+	exit(0);
 }
 
 void kill_children(){
@@ -35,29 +51,16 @@ void init_pid_list(){
 	}
 }
 
-void detach_mem(){
-	shmdt(buffer_ptr);
-	shmdt(sem_ptr);
-}
 
-void rm_mem(){
-	shmctl(buffer_id, IPC_RMID, NULL);
-	shmctl(state_id, IPC_RMID, NULL);
-}
-
-void cleanup(){
-	detach_mem();
-	rm_mem();
-}
 
 
 
 int main(int argc, char *argv[]){
 
+	//signal handlers
 	signal(SIGINT, ctrl_c_handler);
-
+	signal(SIGKILL, ctrl_c_handler);
 	// variable declarations
-
 	int opt;
 	int producers = 2;
 	int consumers = 6; 
@@ -70,7 +73,6 @@ int main(int argc, char *argv[]){
 	init_pid_list();
 
 	// gets options set up
-
 	while ((opt = getopt(argc, argv, "ho:p:c:t:")) != -1){
 		switch (opt) {
 		case 'h':
@@ -106,8 +108,14 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-	// makes sure that # of consumers is greater than # of producers
+	// makes sure that the producers does not meet or exceed the max amount of processes allowed
+	if (producers > max_proc - 1){
+		printf("# of producers exceeds the max number of processes allowed\n");
+		printf("Lowering to 18 producers.\n\n");
+		producers = 18;
+	}
 
+	// makes sure that # of consumers is greater than # of producers
 	if (producers >= consumers){
 		printf("Number of consumers must be greater than producers.\n");
 		printf("Setting consumers to # of producers +1 \n");
@@ -117,23 +125,18 @@ int main(int argc, char *argv[]){
 	}
 
 
-	// makes sure that the producers + consumers dont exceed the max process allowment
+	//gets shared semaphore array
+	key_t sem_key = ftok("./README", 'a');
+	sem_id = semget(sem_key, 5, IPC_CREAT | 0666);
 
-	if (producers + consumers > max_proc){
-		printf("# of producers and consumers provided exceeds the max number of processes allowed.\n");
-		printf("Defaulting to 2 producers and 6 consumers.\n\n");
-		producers = 2;
-		consumers = 6;
-	}
-
-	key_t state_key = ftok("./README", 'a');
-	state_id = shmget(state_key, sizeof(int) * (producers + consumers), IPC_CREAT | 0666);
-	sem_ptr = (int *)shmat(state_id, 0, 0);
-
+	//gets shared memory for the buffer
 	key_t buffer_key = ftok(".", 'a');
 	buffer_id = shmget(buffer_key, sizeof(int) * 4, IPC_CREAT | 0666);
 	buffer_ptr = (int *)shmat(buffer_id, 0, 0);
-	
+
+
+
+	// cleanup before exiting
 	cleanup();
 
 return 0;
