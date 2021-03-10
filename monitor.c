@@ -161,12 +161,38 @@ int main(int argc, char *argv[]){
 
 	//gets shared memory for the buffer
 	key_t buffer_key = ftok(".", 'a');
-	buffer_id = shmget(buffer_key, sizeof(int) * 4, IPC_CREAT | 0666);
+	buffer_id = shmget(buffer_key, sizeof(int) * 6, IPC_CREAT | 0666);
 	buffer_ptr = (int *)shmat(buffer_id, 0, 0);
 
 	//initialize the semaphores
-	
+	semctl(sem_id, MUTEX, SETVAL, 1);
+	semctl(sem_id, FREE_SPACE, SETVAL, 4);
+	semctl(sem_id, IN_BUFFER, SETVAL, 0);
 
+	buffer_ptr[NEXTIN] = 0;
+	buffer_ptr[NEXTOUT] = 0;
+
+	int c;
+	int p;
+	pid_t pid;
+
+	for (p = 0; p<producers; p++){
+		pid = fork();
+		if (pid == 0){
+			execl("./producer", "./producer", (char*)0);
+		}
+	}
+	for (c = 0; c<consumers; c++){
+		pid = fork();
+		if (pid == 0){
+			execl("./consumer", "./consumer", (char*)0);
+		}
+	}
+
+	while(1){
+
+		
+	}
 
 
 	// cleanup before exiting

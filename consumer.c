@@ -21,10 +21,6 @@ void kill_handler(){
 
 int main(int argc, char *argv[]){
 
-    //gets shared semaphore array
-	key_t sem_key = ftok("./README", 'a');
-	sem_id = semget(sem_key, NUM_SEMS, 0);
-
     srand(time(NULL));
 
     //set up handler for premature end 
@@ -36,11 +32,8 @@ int main(int argc, char *argv[]){
     //sleep
     sleep(sleep_time);
 
-    //wait for signal to consume from the monitor
-    //this will include some logging and will be done in the monitor
-    //consume();
+    consume();
     
-
     //die
     exit(0);
 }
