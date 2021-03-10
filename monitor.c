@@ -164,6 +164,9 @@ int main(int argc, char *argv[]){
 	buffer_id = shmget(buffer_key, sizeof(int) * 4, IPC_CREAT | 0666);
 	buffer_ptr = (int *)shmat(buffer_id, 0, 0);
 
+	//initialize the semaphores
+	
+
 
 
 	// cleanup before exiting

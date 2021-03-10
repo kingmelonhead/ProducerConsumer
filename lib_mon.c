@@ -11,8 +11,11 @@
 #include <time.h>
 #include "lib_mon.h"
 
-//constant for number of semaphores
-#define NUM_SEMS 5
+//constants
+#define NUM_SEMS 3
+#define MUTEX 0
+#define BUFFER_SIZE 1
+#define IN_BUFFER 2
 
 int *buffer_ptr;
 int sem_id, buffer_id;
