@@ -24,6 +24,7 @@ char *log_ptr;
 
 
 void detach_mem(){
+	//detaches shared memory
 	shmdt(buffer_ptr);
 	shmdt(log_ptr);
 }
@@ -51,17 +52,20 @@ void find_and_remove(pid_t pid){
 }
 
 void rm_mem(){
+	//deletes shared memory and semaphores
 	shmctl(buffer_id, IPC_RMID, NULL);
 	shmctl(log_id, IPC_RMID, NULL);
 	semctl(sem_id, 0, IPC_RMID, NULL);
 }
 
 void cleanup(){
+	//function called for cleanup
 	detach_mem();
 	rm_mem();
 }
 
 void display_help(){
+	//function to display help menu
 	printf("How to invoke program: monitor [-h] [-o logfile] [-p m] [-c n] [-t time]\n\n");
 	printf("This program solves the producer consumer problem using a monitor.\n");
 	printf("The program has a few different options that you can use to edit how the program executes.\n");
@@ -86,6 +90,8 @@ void kill_children(){
 
 
 void ctrl_c_handler(){
+	//used to handle ctrl + c amd early exit
+	fprintf(stderr, "Ctrl + c or early termination caught.")
 	cleanup();
 	kill_children();
 	exit(0);
@@ -93,6 +99,7 @@ void ctrl_c_handler(){
 
 
 void init_pid_list(){
+	//sets all pids to 0 to begin with
 	int i;
 	for (i=0; i<19; i++){
 		pid_list[i] = 0;
@@ -246,6 +253,7 @@ int main(int argc, char *argv[]){
 			execl("./producer", "./producer", (char*)0);
 		}
 	}
+	//spawns consumers while the number of processes is less than the max
 	for (c = 0; c<consumers; c++){
 		sem_wait(FREE_PROC);
 		place = get_place();
@@ -255,6 +263,7 @@ int main(int argc, char *argv[]){
 		}
 	}
 	
+	//waits for everything to be done
 	while(1){
 		if (semctl(sem_id, CONSUMERS_WAITING, GETVAL, NULL) == 0){
 			while (1){

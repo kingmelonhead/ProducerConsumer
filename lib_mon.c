@@ -41,16 +41,18 @@ void produce(){
 	log_id = shmget(log_key, sizeof(char) * 30, IPC_EXCL);
 	log_ptr = (char *)shmat(log_id, 0, 0);
 
+    //signal handlers
     signal(SIGINT, death_handler);
     srand(time(NULL));
 
+    //wait and decrement
     sem_wait(CONSUMERS_WAITING);
     sem_signal(PROD_WORKING);
     sem_wait(FREE_SPACE);
     sem_wait(MUTEX);
 
     int product;
-
+    //produce something
     product = (rand() % 513);
 
     time_t time_start, time_end;
@@ -66,6 +68,7 @@ void produce(){
     FILE *file_ptr;
     file_ptr = fopen(log_ptr, "a");
 
+    //time right before logging
     time(&time_start);
     time_start_info = localtime(&time_start);
 
@@ -91,6 +94,7 @@ void produce(){
     shmdt(buffer_ptr);
     shmdt(log_ptr);
 
+    //signal (increment sems)
     sem_signal(MUTEX);
     sem_signal(IN_BUFFER);
 }
@@ -102,6 +106,7 @@ void consume(){
 	log_id = shmget(log_key, sizeof(char) * 30, IPC_EXCL);
 	log_ptr = (char *)shmat(log_id, 0, 0);
 
+    //wait and decrement
     sem_wait(IN_BUFFER);
     sem_wait(MUTEX);
 
@@ -120,6 +125,7 @@ void consume(){
     FILE *file_ptr;
     file_ptr = fopen(log_ptr, "a");
 
+    //time right before logging
     time(&time_start);
     time_start_info = localtime(&time_start);
 
@@ -135,16 +141,19 @@ void consume(){
     //sleep for 1 second
     sleep(1);
 
-
+    //get time right before leaving monitor
     time(&time_end);
     time_end_info = localtime(&time_end);
+
     //log the new number, and state what was done. as well as record the time
     fprintf(file_ptr, "%d has been consumed! Time: %s\n\n", food, asctime(time_end_info));
+
     //clean up 
     fclose(file_ptr);
     shmdt(buffer_ptr);
     shmdt(log_ptr);
 
+    //increment appropriate sems
     sem_signal(MUTEX);
     sem_signal(FREE_SPACE);
     sem_wait(PROD_WORKING);
@@ -153,6 +162,7 @@ void consume(){
 }
 
 void sem_wait(int x){
+    //function used for decrementing sems
 
     struct sembuf op;
 
@@ -167,6 +177,7 @@ void sem_wait(int x){
 }
 
 void sem_signal(int x){
+    //function used for incrementing sems
 
     struct sembuf op;
 
