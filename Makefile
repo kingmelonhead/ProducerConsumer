@@ -29,4 +29,4 @@ lib_mon.a: lib_mon.o
 	ar rcs $@ $^
 
 clean:
-	rm monitor consumer producer *.txt *.o *.a *.log
+	rm monitor consumer producer *.txt *.o *.a *.log logfile

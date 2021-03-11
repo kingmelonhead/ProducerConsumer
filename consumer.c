@@ -10,6 +10,7 @@
 #include <sys/sem.h>
 #include <time.h>
 #include "lib_mon.h"
+#include <errno.h>
 
 /* file - consumer.c   */
 
@@ -20,6 +21,10 @@ void kill_handler(){
 }
 
 int main(int argc, char *argv[]){
+
+    //gets shared semaphore array
+	key_t sem_key = ftok("./README", 'a');
+	sem_id = semget(sem_key, NUM_SEMS, 0);
 
     srand(time(NULL));
 
@@ -33,7 +38,8 @@ int main(int argc, char *argv[]){
     sleep(sleep_time);
 
     consume();
-    
+
     //die
+    sem_signal(FREE_PROC);
     exit(0);
 }

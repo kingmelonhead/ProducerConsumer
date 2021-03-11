@@ -10,6 +10,7 @@
 #include <sys/sem.h>
 #include <time.h>
 #include "lib_mon.h"
+#include <errno.h>
 
 /* file - producer.c */
 
