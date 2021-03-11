@@ -3,4 +3,51 @@ README
 Jophn Hackstadt
 Assignment 3 - OS
 
-----------------------------------------------
+-------- Description    ------------
+
+This program solves the producer consumer problem using a monitor.
+The program has a few different options that you can use to edit how the program executes.
+
+The monitor is implemented using semaphores and shared memory. Mutual exclusion is obtained by keeping critical 
+routines inside the monitor and only allowing 1 process at a time into the monitor. 
+
+In my program specifically, the "product" that was produced was just some random number, that was then written to the buffer.
+
+Then, consuming was simply taking that number from the bufer and outputting that it was taken to the log
+
+This seemed to have been left up to interpretation as far as what to produce so I decided to keep it simple
+
+The monitor functions by utilizing a driver file and a shared library of functions that was turned to a static linked
+library. This allowed all of the executables to use the shared functions.
+
+
+--------  Instructions   --------
+
+How to invoke program: monitor [-h] [-o logfile] [-p m] [-c n] [-t time]
+
+Options:
+
+[-h]		    -This option is how the program was run to display this menu. Program outputs help menu and exits.
+
+[-i] logfile    -This option allows the user to change the name of the logfile. (max of 20 chars)
+
+[-p] m		    -This option allows the user to override the default number of producers.
+
+[-c] n		    -This option allows the user to override the default number of consumers.
+
+[-t] time	    -This option allows the user to override the default max execution time allowed.
+
+------- Changes / Assumptions ------
+
+My program has a hard cap on the number of producers allowed. I set it to 18. The project doesnt 
+explicitly say to do this. However, the nature of the producer functions makes them not die, so this makes
+it so at most there is only ever:  monitor + 18 producers + 1 consumer, keeping the process count under the 
+20 process limit. This doesnt lead to any issues outside of longer run time. The consumers, while only 1 is allowd
+at a time in that worst case scenario, they will still be able to spawn, carry out their job, and exit in a 
+reasonable time and without errors. 
+
+-------- Complications -------------
+
+I didnt really have any issues during the production of this projects. The semaphores and everything actually worked 
+first try.
+
