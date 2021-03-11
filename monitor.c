@@ -91,7 +91,7 @@ void kill_children(){
 
 void ctrl_c_handler(){
 	//used to handle ctrl + c amd early exit
-	fprintf(stderr, "Ctrl + c or early termination caught.")
+	fprintf(stderr, "Ctrl + c or early termination caught.");
 	cleanup();
 	kill_children();
 	exit(0);
