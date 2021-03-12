@@ -48,6 +48,14 @@ reasonable time and without errors.
 
 -------- Complications -------------
 
-I didnt really have any issues during the production of this projects. The semaphores and everything actually worked 
-first try.
+I didnt really have any super serious issues during the production of this projects. The semaphores and the rest
+of the harder stuff worked first try.
 
+Only end of the world issue I came across was my monitor was dying before telling the producers that they are free to die
+This led to a number of issues when the producers kept trying to carry on while the monitor was trying to free
+the shared memory and semaphores.
+
+This actually took a long time to fix. I initially thought the semaphores were messed up but my issue was actually
+becasue the cleanup function in the driver (monitor.c) was deleting the shared memory and the semaphores while the
+producers were still stuck waiting. I fixed this by killing them before messing with the shared memory
+and semaphores

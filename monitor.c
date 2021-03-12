@@ -73,6 +73,7 @@ void cleanup(){
 	kill_children();
 	detach_mem();
 	rm_mem();
+	free(pid_list);
 }
 
 void display_help(){
