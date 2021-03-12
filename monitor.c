@@ -111,6 +111,7 @@ void child_handler(int sig){
 	pid_t pid;
 	while ((pid = waitpid((pid_t)(-1), 0, WNOHANG)) > 0) {
 		find_and_remove(pid);
+		sem_wait(RUNNING_CONSUMERS);
 	}
 	
 }
@@ -214,17 +215,40 @@ int main(int argc, char *argv[]){
 
 
 	//gets shared semaphore array
-	key_t sem_key = ftok("./README", 'a');
+	key_t sem_key = ftok("README", 'a');
 	sem_id = semget(sem_key, NUM_SEMS, IPC_CREAT | 0666);
+
+	if (sem_id == -1){
+		perror("monitor.c: Error: Semaphores could not be created");
+		printf("exiting\n\n");
+		cleanup();
+		exit(0);
+	}
 
 	//gets shared memory for the buffer
 	key_t buffer_key = ftok(".", 'a');
 	buffer_id = shmget(buffer_key, sizeof(int) * 6, IPC_CREAT | 0666);
+
+	if (buffer_id == -1){
+		perror("monitor.c: Error: Shared memory (buffer) could not be created");
+		printf("exiting\n\n");
+		cleanup();
+		exit(0);
+	}
+
 	buffer_ptr = (int *)shmat(buffer_id, 0, 0);
 
 	//gets shared memory for the name of the logfile
 	key_t log_key = ftok("Makefile", 'a');
 	log_id = shmget(log_key, sizeof(char) * 30, IPC_CREAT | 0666);
+
+	if (log_id == -1){
+		perror("monitor.c: Error: Shared memory (log name) could not be created");
+		printf("exiting\n\n");
+		cleanup();
+		exit(0);
+	}
+
 	log_ptr = (char *)shmat(log_id, 0, 0);
 
 	sprintf(log_ptr, "%s", log_name);
@@ -235,6 +259,7 @@ int main(int argc, char *argv[]){
 	semctl(sem_id, IN_BUFFER, SETVAL, 0);
 	semctl(sem_id, CONSUMERS_WAITING, SETVAL, consumers);
 	semctl(sem_id, FREE_PROC, SETVAL, 19);
+	semctl(sem_id, RUNNING_CONSUMERS, SETVAL, consumers);
 
 	//initialize head and tail of circular buffer
 	buffer_ptr[NEXTIN] = 0;
@@ -247,6 +272,7 @@ int main(int argc, char *argv[]){
 
 	//spawn all the producers
 	for (p = 0; p<producers; p++){
+		sem_wait(FREE_PROC);
 		place = get_place();
 		pid_list[place] = fork();
 		if (pid_list[place] == 0){
@@ -262,15 +288,10 @@ int main(int argc, char *argv[]){
 			execl("./consumer", "./consumer", (char*)0);
 		}
 	}
-	
+
 	//waits for everything to be done
 	while(1){
-		if (semctl(sem_id, CONSUMERS_WAITING, GETVAL, NULL) == 0){
-			while (1){
-				if (semctl(sem_id, PROD_WORKING, GETVAL, NULL) == 0){
-					break;
-				}
-			}
+		if (semctl(sem_id, RUNNING_CONSUMERS, GETVAL, NULL) == 0){
 			break;
 		}
 	}

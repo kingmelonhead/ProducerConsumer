@@ -12,7 +12,7 @@
 #include "lib_mon.h"
 
 //constants
-#define NUM_SEMS 6
+#define NUM_SEMS 7
 #define MUTEX 0
 #define FREE_SPACE 1
 #define IN_BUFFER 2
@@ -21,6 +21,7 @@
 #define NEXTIN 4
 #define NEXTOUT 5
 #define PROD_WORKING 5 
+#define RUNNING_CONSUMERS 6
 
 int *buffer_ptr;
 int sem_id, buffer_id;
@@ -39,6 +40,14 @@ void produce(){
     //gets shared memory for the name of the logfile
 	key_t log_key = ftok("Makefile", 'a');
 	log_id = shmget(log_key, sizeof(char) * 30, IPC_EXCL);
+
+    if (log_id == -1){
+		perror("produce(): Error: Shared memory (log name) could not be created");
+		printf("exiting\n\n");
+        death_handler();
+		exit(0);
+	}
+
 	log_ptr = (char *)shmat(log_id, 0, 0);
 
     //signal handlers
@@ -55,13 +64,23 @@ void produce(){
     //produce something
     product = (rand() % 513);
 
+    printf("Produced %d\n", product);
+
     time_t time_start, time_end;
     struct tm * time_start_info;
     struct tm * time_end_info;
 
 	//gets shared memory for the buffer
 	key_t buffer_key = ftok(".", 'a');
-	buffer_id = shmget(buffer_key, sizeof(int) * 4, IPC_EXCL);
+	buffer_id = shmget(buffer_key, sizeof(int) * 6, IPC_EXCL);
+
+    if (buffer_id == -1){
+		perror("produce(): Error: Shared memory (buffer) could not be created");
+		printf("exiting\n\n");
+        death_handler();
+		exit(0);
+	}
+
 	buffer_ptr = (int *)shmat(buffer_id, 0, 0);
 
     //open file
@@ -95,6 +114,7 @@ void produce(){
     shmdt(log_ptr);
 
     //signal (increment sems)
+    sem_wait(PROD_WORKING);
     sem_signal(MUTEX);
     sem_signal(IN_BUFFER);
 }
@@ -104,6 +124,14 @@ void consume(){
     //gets shared memory for the name of the logfile
 	key_t log_key = ftok("Makefile", 'a');
 	log_id = shmget(log_key, sizeof(char) * 30, IPC_EXCL);
+
+    if (log_id == -1){
+		perror("consume(): Error: Shared memory (log name) could not be created");
+		printf("exiting\n\n");
+        death_handler();
+		exit(0);
+	}
+
 	log_ptr = (char *)shmat(log_id, 0, 0);
 
     //wait and decrement
@@ -118,7 +146,15 @@ void consume(){
 
 	//gets shared memory for the buffer
 	key_t buffer_key = ftok(".", 'a');
-	buffer_id = shmget(buffer_key, sizeof(int) * 4, IPC_EXCL);
+	buffer_id = shmget(buffer_key, sizeof(int) * 6, IPC_EXCL);
+
+    if (buffer_id == -1){
+		perror("consume(): Error: Shared memory (buffer) could not be created");
+		printf("exiting\n\n");
+        death_handler();
+		exit(0);
+	}
+
 	buffer_ptr = (int *)shmat(buffer_id, 0, 0);
 
     //open file
@@ -131,6 +167,8 @@ void consume(){
 
     //consume
     food = buffer_ptr[buffer_ptr[NEXTOUT]];
+
+    printf("Consumed %d\n", food);
 
     //log this number and time
     fprintf(file_ptr, "Got %d from the buffer at space %d Time: %s", food, buffer_ptr[NEXTOUT], asctime(time_start_info));
@@ -156,7 +194,7 @@ void consume(){
     //increment appropriate sems
     sem_signal(MUTEX);
     sem_signal(FREE_SPACE);
-    sem_wait(PROD_WORKING);
+    
 
     
 }
@@ -167,8 +205,14 @@ void sem_wait(int x){
     struct sembuf op;
 
     //gets shared semaphore array
-	key_t sem_key = ftok("./README", 'a');
+	key_t sem_key = ftok("README", 'a');
 	sem_id = semget(sem_key, NUM_SEMS, 0);
+
+    if (sem_id == -1){
+		perror("sem_wait: Error: Semaphores could not be got");
+		printf("exiting\n\n");
+		exit(0);
+	}
 
     op.sem_num = x;
     op.sem_op = -1;
@@ -182,8 +226,14 @@ void sem_signal(int x){
     struct sembuf op;
 
     //gets shared semaphore array
-	key_t sem_key = ftok("./README", 'a');
+	key_t sem_key = ftok("README", 'a');
 	sem_id = semget(sem_key, NUM_SEMS, 0);
+
+    if (sem_id == -1){
+		perror("sem_signal: Error: Semaphores could not be got");
+		printf("exiting\n\n");
+		exit(0);
+	}
 
     op.sem_num = x;
     op.sem_op = 1;
