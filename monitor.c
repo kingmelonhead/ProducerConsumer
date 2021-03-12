@@ -58,8 +58,19 @@ void rm_mem(){
 	semctl(sem_id, 0, IPC_RMID, NULL);
 }
 
+void kill_children(){
+	//function to kill all pids on the event of early termination
+	int i; 
+	for (i=0; i<19; i++){
+		if (pid_list[i] != 0){
+			kill(pid_list[i], SIGKILL);
+		}
+	}
+}
+
 void cleanup(){
 	//function called for cleanup
+	kill_children();
 	detach_mem();
 	rm_mem();
 }
@@ -78,22 +89,13 @@ void display_help(){
 	printf("NOTE: If there is still confusion, more information can be found in the README.\n\n");
 	}
 
-void kill_children(){
-	//function to kill all pids on the event of early termination
-	int i; 
-	for (i=0; i<19; i++){
-		if (pid_list[i] != 0){
-			kill(pid_list[i], SIGKILL);
-		}
-	}
-}
+
 
 
 void ctrl_c_handler(){
 	//used to handle ctrl + c amd early exit
 	fprintf(stderr, "Ctrl + c or early termination caught.");
 	cleanup();
-	kill_children();
 	exit(0);
 }
 
@@ -112,7 +114,8 @@ void child_handler(int sig){
 	while ((pid = waitpid((pid_t)(-1), 0, WNOHANG)) > 0) {
 		find_and_remove(pid);
 		sem_wait(RUNNING_CONSUMERS);
-	}
+    	sem_signal(FREE_PROC);
+	}	
 	
 }
 
@@ -296,9 +299,9 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-
 	// cleanup before exiting
 	cleanup();
 
-return 0;
+	//exit
+	return 0;
 }

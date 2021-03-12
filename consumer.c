@@ -22,16 +22,6 @@ void kill_handler(){
 
 int main(int argc, char *argv[]){
 
-    //gets shared semaphore array
-	key_t sem_key = ftok("README", 'a');
-	sem_id = semget(sem_key, NUM_SEMS, 0);
-
-    if (sem_id == -1){
-		perror("consumer.c: Error: Semaphores could not be got");
-		printf("exiting\n\n");
-		exit(0);
-	}
-
     srand(time(NULL));
 
     //set up handler for premature end 
@@ -46,6 +36,5 @@ int main(int argc, char *argv[]){
     consume();
 
     //die
-    sem_signal(FREE_PROC);
     exit(0);
 }
