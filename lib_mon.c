@@ -52,7 +52,7 @@ void produce(){
 
     //signal handlers
     signal(SIGINT, death_handler);
-    srand(time(NULL));
+
 
     //wait and decrement
     sem_wait(CONSUMERS_WAITING);
@@ -60,11 +60,10 @@ void produce(){
     sem_wait(FREE_SPACE);
     sem_wait(MUTEX);
 
-    int product;
-    //produce something
-    product = (rand() % 513);
+    srand(time(NULL));
 
-    printf("Produced %d\n", product);
+    int product;
+    
 
     time_t time_start, time_end;
     struct tm * time_start_info;
@@ -91,8 +90,15 @@ void produce(){
     time(&time_start);
     time_start_info = localtime(&time_start);
 
-    fprintf(file_ptr, "Writing %d to buffer space %d Time: %s", product, buffer_ptr[NEXTIN], asctime(time_start_info));
+    fprintf(file_ptr, "Entered Critical section. Time: %s", asctime(time_start_info));
 
+    //sleep 1 second
+    sleep(1);
+
+    //produce something
+    product = (rand() % 513);
+
+    printf("Produced %d\n", product);
     
     //write to buffer
     buffer_ptr[buffer_ptr[NEXTIN]] = product;
@@ -100,13 +106,12 @@ void produce(){
     //increment head
     buffer_ptr[NEXTIN] = (buffer_ptr[NEXTIN] + 1) % 4;
 
-    //sleep 1 second
-    sleep(1);
+    
 
     //log the time post sleep and notify that exiting
     time(&time_end);
     time_end_info = localtime(&time_end);
-    fprintf(file_ptr, "Leaving Monitor! Time: %s \n\n", asctime(time_end_info));
+    fprintf(file_ptr, "produced %d. Leaving Monitor! Time: %s \n\n", product, asctime(time_end_info));
 
     //clean up 
     fclose(file_ptr);
